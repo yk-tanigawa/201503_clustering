@@ -12,15 +12,77 @@
 #include "my_vector.hpp"
 #include "time_bench.hpp"
 
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/io.hpp>
+
+
 using namespace std;
+using namespace boost::numeric::ublas;
+using namespace boost::numeric;
 
 template <class T>
-inline double dist(vector<T> x, vector<T> y){
+inline double norm(ublas::vector<T> v){
+  /* ベクトルのノルムを計算する */
+  double sum = 0;
+  for(unsigned int i = 0; i < v.size(); ++i){
+    sum += v[i] * v[i];
+  }
+  return sqrt(sum);
+}
+
+template <class T>
+inline double dist(ublas::vector<T> x, ublas::vector<T> y){
+  /* ベクトルのノルムから距離を定義 */
+  return norm(x - y); 
+}
+
+template <class T>
+inline double dist(ublas::matrix_row<T> x, ublas::matrix_row<T> y){
+  /* ベクトルのノルムから距離を定義 matrix_rowを引数に取るバージョン */
+  return norm(x - y); 
+}
+
+
+template <class T>
+unsigned int argmin(ublas::vector<T> v){
+  if(v.empty()){ return -1; /* エラー */    
+  }else{
+    int argmin = 0; T minval = v.at(argmin);     
+    for(int i = 0; i < v.size(); ++i){
+      if(v.at(i) < minval){
+	argmin = i; minval = v.at(i);
+      }
+    }
+    return argmin;
+  }
+}
+
+
+template <class T>
+T min(ublas::vector<T> v){
+  if(v.empty()){ return -1; /* エラー */    
+  }else{
+    T minval = v.at(0);
+    for(unsigned int i = 0; i < v.size(); ++i){
+      if(v.at(i) < minval){	
+	minval = v.at(i);
+      }
+    }
+    return argmin;
+  }
+}
+
+#if 0
+/* 下記 std vector版*/ 
+template <class T>
+inline double dist(std::vector<T> x, std::vector<T> y){
   return norm(x - y); /* ベクトルのノルムから距離を定義 */
 }
 
 template <class T>
-inline int argmin(vector<T> v){
+inline int argmin(std::vector<T> v){
   if(v.size() < 2){
     return 0;
   }else{
@@ -35,7 +97,7 @@ inline int argmin(vector<T> v){
 }
 
 template <class T>
-inline int min(vector<T> v){
+inline T min(std::vector<T> v){
   if(v.size() < 2){
     return v.at(0);
   }else{
@@ -49,68 +111,71 @@ inline int min(vector<T> v){
   }
 }
 
+
 void Hamerly_update_ul(const int n, const int k,
-		       const vector<vector <double> > data,
-		       const vector<vector<double> > c, /* クラスタの重心 */
-		       const vector<int> a,    /* 各点x_iが属するクラスタ */
-		       vector<double> &u,   /* upper bound */
-		       vector<double> &l    /* lower bound */);
+		       const ublas::vector<ublas::vector <double> > data,
+		       const ublas::vector<ublas::vector<double> > c, /* クラスタの重心 */
+		       const ublas::vector<int> a,    /* 各点x_iが属するクラスタ */
+		       ublas::vector<double> &u,   /* upper bound */
+		       ublas::vector<double> &l    /* lower bound */);
 bool Hamerly_repeat(const int n, const int d, const int k,
-		    const vector<vector <double> > data,
-		    vector<int> &q,      /* クラスタ中の点の数 */
-		    vector<vector<double> > &c,     /* クラスタの重心 */
-		    vector<vector<double> > &c_sum, /* クラスタのベクトル和*/
-		    vector<double> &s,   /* 最近接クラスタの重心との距離 */
-		    vector<int> &a,      /* 各点x_iが属するクラスタ */
-		    vector<double> &u,   /* upper bound */
-		    vector<double> &l    /* lower bound */);
+		    const ublas::vector<ublas::vector <double> > data,
+		    ublas::vector<int> &q,      /* クラスタ中の点の数 */
+		    ublas::vector<ublas::vector<double> > &c,     /* クラスタの重心 */
+		    ublas::vector<ublas::vector<double> > &c_sum, /* クラスタのベクトル和*/
+		    ublas::vector<double> &s,   /* 最近接クラスタの重心との距離 */
+		    ublas::vector<int> &a,      /* 各点x_iが属するクラスタ */
+		    ublas::vector<double> &u,   /* upper bound */
+		    ublas::vector<double> &l    /* lower bound */);
 void Hamerly_init(const int n, const int d, const int k,
-		  const vector<vector <double> > data,
-		  vector<int> &q,      /* クラスタ中の点の数 */
-		  vector<vector<double> > &c,     /* クラスタの重心 */
-		  vector<vector<double> > &c_sum, /* クラスタのベクトル和*/
-		  vector<int> &a,      /* 各点x_iが属するクラスタ */
-		  vector<double> &u,   /* upper bound */
-		  vector<double> &l    /* lower bound */);
+		  const ublas::vector<ublas::vector <double> > data,
+		  ublas::vector<int> &q,      /* クラスタ中の点の数 */
+		  ublas::vector<ublas::vector<double> > &c,     /* クラスタの重心 */
+		  ublas::vector<ublas::vector<double> > &c_sum, /* クラスタのベクトル和*/
+		  ublas::vector<int> &a,      /* 各点x_iが属するクラスタ */
+		  ublas::vector<double> &u,   /* upper bound */
+		  ublas::vector<double> &l    /* lower bound */);
 double Hamerly_sqerr(const int n, const int k,
-		     const vector<vector<double> > data,
-		     vector<vector<double> > &c,  /* クラスタの重心 */
-		     vector<int> &a      /* 各点x_iが属するクラスタ */);
+		     const ublas::vector<ublas::vector<double> > data,
+		     ublas::vector<ublas::vector<double> > &c,  /* クラスタの重心 */
+		     ublas::vector<int> &a      /* 各点x_iが属するクラスタ */);
 void Hamerly(const int n, const int d, const int k,
-	     const vector<vector <double> > data);
+	     const ublas::vector<ublas::vector <double> > data);
 
 
 /* 下記プログラム本体 */
+#endif
 
-
-void Hamerly_update_ul(const int n, const int k,
-		       const vector<vector <double> > data,
-		       const vector<vector<double> > c, /* クラスタの重心 */
-		       const vector<int> a,    /* 各点x_iが属するクラスタ */
-		       vector<double> &u,   /* upper bound */
-		       vector<double> &l    /* lower bound */){
-  for(int i = 0; i < n; ++i){
-    u.at(i) = dist(data.at(i), c.at(a.at(i)));
-    double distance = dist(data.at(i), c.at(0));
+void Hamerly_update_ul(const unsigned int n, const unsigned int k,
+		       const ublas::matrix <double> data,
+		       const ublas::matrix <double> c,       /* クラスタの重心 */
+		       const ublas::vector <unsigned int> a, /* 各点x_iが属するクラスタ */
+		       ublas::vector<double> &u,            /* upper bound */
+		       ublas::vector<double> &l             /* lower bound */){
+  for(unsigned int i = 0; i < n; ++i){
+    u[i] = dist(row(data,i), row(c,a[i]));
+    double distance = dist(row(data,i), row(c,0));
     double min = distance;
-    for(int j = 1; j < k; ++j){
-      distance = dist(data.at(i), c.at(j));
-      if(distance < min){ min = distance; }
+    for(unsigned int j = 1; j < k; ++j){
+      if(j != a[i]){
+	distance = dist(row(data,i), row(c,j));
+	if(distance < min){ min = distance; }
+      }
     }
-    l.at(i) = min;
+    l[i] = min;
   }
   return;
 }
 
-bool Hamerly_repeat(const int n, const int d, const int k,
-		    const vector<vector <double> > data,
-		    vector<int> &q,      /* クラスタ中の点の数 */
-		    vector<vector<double> > &c,     /* クラスタの重心 */
-		    vector<vector<double> > &c_sum, /* クラスタのベクトル和*/
-		    vector<double> &s,   /* 最近接クラスタの重心との距離 */
-		    vector<int> &a,      /* 各点x_iが属するクラスタ */
-		    vector<double> &u,   /* upper bound */
-		    vector<double> &l    /* lower bound */){
+bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned int k,
+		    const ublas::matrix <double> data,
+		    ublas::vector<unsigned int> &q, /* クラスタ中の点の数 */
+		    ublas::matrix<double> &c,       /* クラスタの重心 */
+		    ublas::matrix<double> &c_sum,   /* クラスタのベクトル和*/
+		    ublas::vector<double> &s,       /* 最近接クラスタの重心との距離 */
+		    ublas::vector<unsigned int> &a, /* 各点x_iが属するクラスタ */
+		    ublas::vector<double> &u,       /* upper bound */
+		    ublas::vector<double> &l        /* lower bound */){
   /* Hamerlyの繰り返しステップ クラスタ重心の更新の有無をbooleanで返す */
   bool updated = false;
 
@@ -125,7 +190,7 @@ bool Hamerly_repeat(const int n, const int d, const int k,
 #endif
   
 
-  /* まずs(j)を更新 
+  /* まずs[j]を更新 
    * s[j] = min_{jj != j} dist(c[jj], c[j]) */
   for(int j = 0; j < k; ++j){
     double min = DBL_MAX;
@@ -148,7 +213,7 @@ bool Hamerly_repeat(const int n, const int d, const int k,
       if(u.at(i) > m){   /* Hamerlyの命題の条件を満たさない */
 	int aa = a.at(i); /* 最近接クラスタが変化したか調べる */
 	{ /* 最近接クラスタを再計算 */
-	  vector<double> distance(k);
+	  ublas::vector<double> distance(k);
 	  for(int j = 0; j < k; ++j){
 	    distance.at(j) = dist(data.at(i), c.at(j));
 	  }
@@ -165,10 +230,10 @@ bool Hamerly_repeat(const int n, const int d, const int k,
 
   if(updated){ /* いずれかのデータ点の最近接クラスタが変化した場合 */
     /* 各クラスタに関するパラメタの更新 */
-    vector<double> p(k, 0); /* 各クラスタの重心の移動距離 */
+    ublas::vector<double> p(k, 0); /* 各クラスタの重心の移動距離 */
     double p_max = -1;      /* 番兵で初期化 */
     for(int j = 0; j < k; ++j){
-      vector<double> c_prev = c.at(j);
+      ublas::vector<double> c_prev = c.at(j);
       c.at(j) = (1.0 / q.at(j)) * c_sum.at(j);
       p.at(j) = dist(c_prev, c.at(j));
       if(p_max < p.at(j)){ p_max = p.at(j); }
@@ -183,66 +248,59 @@ bool Hamerly_repeat(const int n, const int d, const int k,
 }
 
 
-void Hamerly_init(const int n, const int d, const int k,
-		  const vector<vector <double> > data,
-		  vector<int> &q,      /* クラスタ中の点の数 */
-		  vector<vector<double> > &c,     /* クラスタの重心 */
-		  vector<vector<double> > &c_sum, /* クラスタのベクトル和*/
-		  vector<int> &a,      /* 各点x_iが属するクラスタ */
-		  vector<double> &u,   /* upper bound */
-		  vector<double> &l    /* lower bound */){
+void Hamerly_init(const unsigned int n, const unsigned int d, const unsigned int k,
+		  const ublas::matrix <double> data,
+		  ublas::vector<unsigned int> &q,   /* クラスタ中の点の数 */
+		  ublas::matrix<double> &c,         /* クラスタの重心 */
+		  ublas::matrix<double> &c_sum,     /* クラスタのベクトル和*/
+		  ublas::vector<unsigned int> &a,   /* 各点x_iが属するクラスタ */
+		  ublas::vector<double> &u,         /* upper bound */
+		  ublas::vector<double> &l          /* lower bound */){
   /* 各クラスタの代表点をランダムに選択 */
-  for(int j = 0; j < k; ++j){
-    vector<double> zero(d, 0);
-    q.at(j) = 0;  c.at(j) = data.at(j); c_sum.at(j) = zero;
+  for(unsigned int j = 0; j < k; ++j){
+    ublas::zero_vector<double> zero(d);
+    q.at(j) = 0;  c.at(j) = row(data, j); c_sum.at(j) = zero;
     /* j番目のクラスタ中心をj番目のデータと一致させて初期化した */
   }
-  for(int i = 0; i < n; ++i){
-    int argmin_j = 0;
+
+  /* 全てのデータ点について，初期クラスタa[i]を計算 */
+  for(unsigned int i = 0; i < n; ++i){
     { /* argmin_j dist(x(i), c(j))の計算 */
-      double distance = dist(data.at(i), c.at(0));
-      double min = distance;
-      for(int j = 1; j < k; ++j){
-	distance = dist(data.at(i), c.at(j));
-	if(distance < min){
-	  min = distance;  argmin_j = j;
-	}
+      ublas::vector<double> distance(k);
+      for(unsigned int j = 0; j < k; ++j){
+	distance.at(j) = dist(row(data,i), row(c,j));
       }
+      a[i] = argmin(distance);
     }
-    a.at(i) = argmin_j;
-    q.at(argmin_j)++;
-    c_sum.at(argmin_j) += data.at(i);
+    /* クラスタ内の点の数，クラスタの点のベクトル和も更新 */
+    q[a[i]]++;  c_sum[a[i]] += row(data,i);    
   }
-  for(int j = 0; j < k; ++j){
-    c.at(j) = (1.0 / q.at(j)) * c_sum.at(j);
+  
+  /* クラスタ重心の計算 */
+  for(unsigned int j = 0; j < k; ++j){
+    c[j] = (1.0 / q[j]) * row(c_sum,j);
   }
   /* upper bound, lower bound の更新 */
   Hamerly_update_ul(n, k, data, c, a, u, l);
-#if 0
-  cerr << "***** init *****" << endl;
-  cerr << "j" << "\t" << "q.at(j)" << "\t" << "c(j)" << endl;
-  for(int j = 0; j < k; ++j){
-    cerr << j << "\t" << q.at(j) << "\t" << c.at(j);
-  }
-#endif
+  
   return;
 }
 
-double Hamerly_sqerr(const int n, const int k,
-		     const vector<vector<double> > data,
-		     vector<vector<double> > &c,  /* クラスタの重心 */
-		     vector<int> &a      /* 各点x_iが属するクラスタ */){
+double Hamerly_sqerr(const unsigned int n, const unsigned int k,
+		     const ublas::matrix<double>data,
+		     const ublas::matrix<double> c,       /* クラスタの重心 */
+		     const ublas::vector<unsigned int> a  /* 各点x_iが属するクラスタ */){
   /* クラスタリング結果に基づき二乗平均二乗誤差を計算して返す */
   double sum = 0;
-  for(int i = 0; i < n; ++i){
-    sum += dist(data.at(i), c.at(a.at(i))) * dist(data.at(i), c.at(a.at(i)));
+  for(unsigned int i = 0; i < n; ++i){
+    sum += dist(row(data,i), row(c,a[i])) * dist(row(data,i), row(c,a[i]));
   }
   return (sum / n);
 }
 
 
-void Hamerly(const int n, const int d, const int k,
-	     const vector<vector <double> > data){
+void Hamerly(const unsigned int n, const unsinged int d, const unsigned int k,
+	     const ublas::matrix<double> data){
   if(n < k){
     cerr << "data size n is smaller than cluster size d" << endl;
     exit(1);
@@ -251,23 +309,20 @@ void Hamerly(const int n, const int d, const int k,
     gettimeofday(&t_start, NULL); /* 時間計測開始 */
 
     /* j番目のクラスタを主語とする記号  */
-    vector<int> q(k);                 /* クラスタ中の点の数 */
-    vector<vector<double> > c(k);     /* クラスタの重心 */
-    vector<vector<double> > c_sum(k); /* クラスタ中のベクトルの総和 */
-    vector<double> s(k, 0);           /* 最近接クラスタの重心との距離 */
+    ublas::vector<unsigned int> q(k);  /* クラスタ中の点の数 */
+    ublas::matrix<double> c(k);        /* クラスタの重心 */
+    ublas::matrix<double> c_sum(k);    /* クラスタ中のベクトルの総和 */
+    ublas::vector<double> s(k, 0);     /* 最近接クラスタの重心との距離 */
     
     /* i番目のデータ点を主語とする記号 */
-    vector<int> a(n);   /* 各点x_iが属するクラスタ */
-    vector<double> u(n);   /* upper bound */
-    vector<double> l(n);   /* lower bound */   
+    ublas::vector<unsigned int> a(n);  /* 各点x_iが属するクラスタ */
+    ublas::vector<double> u(n);        /* upper bound */
+    ublas::vector<double> l(n);        /* lower bound */   
     
     Hamerly_init(n, d, k, data, q, c, c_sum, a, u, l);
 
     int t = 0;
     while(Hamerly_repeat(n, d, k, data, q, c, c_sum, s, a, u, l)){ t++; }
-
-    //Hamerly_repeat(n, d, k, data, q, c, c_sum, s, a, u, l);
-    //Hamerly_repeat(n, d, k, data, q, c, c_sum, s, a, u, l);
 
     gettimeofday(&t_end, NULL); /* 時間計測終了 */
     
@@ -287,16 +342,16 @@ int main(int argc, char *argv[]){
 	 << " <n: data num> <d: dimension> <k: cluster num> <data file>" << endl;
     exit(1);
   }else{
-    int n = atoi(argv[1]), d = atoi(argv[2]), k = atoi(argv[3]);
+    unsigned int n = atoi(argv[1]), d = atoi(argv[2]), k = atoi(argv[3]);
     char *file = argv[4];
-    vector<vector <double> > data(n);
+    ublas::matrix<double> data(n, k);
     {
       ifstream fs(file);
       if(fs.fail()){ exit(1); }
-      for(int i = 0; i < n; ++i){
+      for(unsigned int i = 0; i < n; ++i){
 	data.at(i).resize(d, 0);
-	for(int j = 0; j < d; ++j){
-	  fs >> data.at(i).at(j);
+	for(unsigned int j = 0; j < d; ++j){
+	  fs >> data[i][j];
 	}
       }
       fs.close();
