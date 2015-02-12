@@ -37,6 +37,20 @@ inline double dist(ublas::vector<T> x, ublas::vector<T> y){
   return norm(v); 
 }
 
+double dist(ublas::matrix<double> mat1, unsigned int r1,
+	    ublas::matrix<double> mat2, unsigned int r2){
+  /* mat1のr1行目のベクトルと, mat2のr2行目のベクトルの距離を計算 */
+  if(mat1.size2() != mat2.size2()){
+    return -1;
+  }else{
+    double sum = 0;
+    for(unsigned int i = 0; i < mat1.size2(); ++i){
+      sum += (mat1(r1, i) - mat2(r2, i)) * (mat1(r1, i) - mat2(r2, i));
+    }
+    return sqrt(sum);
+  }
+}
+
 template <class T>
 unsigned int argmin(ublas::vector<T> v){
   if(v.empty()){ return -1; /* エラー */    
@@ -72,12 +86,12 @@ void Hamerly_update_ul(const unsigned int n, const unsigned int k,
 		       ublas::vector<double> &u,            /* upper bound */
 		       ublas::vector<double> &l             /* lower bound */){
   for(unsigned int i = 0; i < n; ++i){
-    u[i] = dist((ublas::vector<double>)row(data,i), (ublas::vector<double>)row(c,a[i]));
-    double distance = dist((ublas::vector<double>)row(data,i), (ublas::vector<double>)row(c,0));
+    u[i] = dist(data,i,c,a[i]);
+    double distance = dist(data,i,c,0);
     double min = distance;
     for(unsigned int j = 1; j < k; ++j){
       if(j != a[i]){
-	distance = dist((ublas::vector<double>)row(data,i), (ublas::vector<double>)row(c,j));
+	distance = dist(data, i, c, j);
 	if(distance < min){ min = distance; }
       }
     }
@@ -115,7 +129,7 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
     double min = DBL_MAX;
     for(unsigned int jj = 0; jj < k; ++jj){
       if(jj != j){
-	double distance = dist((ublas::vector<double>)row(c,j), (ublas::vector<double>)row(c,jj));
+	double distance = dist(c,j,c,jj);
 	if(distance < min){ min = distance; }
       }
     }
@@ -128,14 +142,14 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
   for(unsigned int i = 0; i < n; ++i){
     double m = max((s[a[i]] / 2.0), l[i]);
     if(u[i] > m){     /* Hamerlyの命題の条件を満たさない */
-      u[i] = dist((ublas::vector<double>)row(data,i), (ublas::vector<double>)row(c,a[i]));
+      u[i] = dist(data,i,c,a[i]);
       /* upper boundを更新 */      
       if(u[i] > m){   /* Hamerlyの命題の条件を満たさない */
 	unsigned int aa = a[i]; /* 最近接クラスタが変化したか調べる */
 	{ /* 最近接クラスタを再計算 */
 	  ublas::vector<double> distance(k);
 	  for(unsigned int j = 0; j < k; ++j){
-	    distance[j] = dist((ublas::vector<double>)row(data,i), (ublas::vector<double>)row(c,j));
+	    distance[j] = dist(data,i,c,j);
 	  }
 	  a[i] = argmin(distance);
 	}
@@ -179,8 +193,8 @@ void Hamerly_init(const unsigned int n, const unsigned int d, const unsigned int
   /* 各クラスタの代表点をランダムに選択 */
   for(unsigned int j = 0; j < k; ++j){
     ublas::zero_vector<double> zero(d);
-    q[j] = 0;  row(c,j) = row(data, j); row(c_sum,j) = zero;
-    /* j番目のクラスタ中心をj番目のデータと一致させて初期化した */
+    q[j] = 0; row(c,j) = row(data, j); row(c_sum,j) = zero;    
+    /* j番目のクラスタ中心をj番目のデータ点と一致させて初期化した */
   }
 
   /* 全てのデータ点について，初期クラスタa[i]を計算 */
@@ -188,7 +202,7 @@ void Hamerly_init(const unsigned int n, const unsigned int d, const unsigned int
     { /* argmin_j dist(x(i), c(j))の計算 */
       ublas::vector<double> distance(k);
       for(unsigned int j = 0; j < k; ++j){
-	distance[j] = dist((ublas::vector<double>)row(data,i), (ublas::vector<double>)row(c,j));
+	distance[j] = dist(data,i,c,j);
       }
       a[i] = argmin(distance);
     }
@@ -213,9 +227,7 @@ double Hamerly_sqerr(const unsigned int n, const unsigned int k,
   /* クラスタリング結果に基づき二乗平均二乗誤差を計算して返す */
   double sum = 0;
   for(unsigned int i = 0; i < n; ++i){
-    sum
-      += dist((ublas::vector<double>)row(data,i), (ublas::vector<double>)row(c,a[i]))
-       * dist((ublas::vector<double>)row(data,i), (ublas::vector<double>)row(c,a[i]));
+    sum += dist(data,i,c,a[i]) * dist(data,i,c,a[i]);
   }
   return (sum / n);
 }
@@ -243,7 +255,7 @@ void Hamerly(const unsigned int n, const unsigned int d, const unsigned int k,
     
     Hamerly_init(n, d, k, data, q, c, c_sum, a, u, l);
 
-    int t = 0;
+    int t = 1;
     while(Hamerly_repeat(n, d, k, data, q, c, c_sum, s, a, u, l)){ t++; }
 
     gettimeofday(&t_end, NULL); /* 時間計測終了 */
@@ -266,7 +278,7 @@ int main(int argc, char *argv[]){
   }else{
     unsigned int n = atoi(argv[1]), d = atoi(argv[2]), k = atoi(argv[3]);
     char *file = argv[4];
-    ublas::matrix<double> data(n, k);
+    ublas::matrix<double> data(n, d); /* n個のd次元データを読み込む */
     {
       ifstream fs(file);
       if(fs.fail()){ exit(1); }
