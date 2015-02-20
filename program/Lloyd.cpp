@@ -13,6 +13,7 @@
 
 using namespace std;
 
+
 void re_clustering(const int n, const int d, const int k,
 		   vector<int> &cluster,
 		   const vector<vector <double> > representative,
@@ -91,20 +92,27 @@ void Lloyd(const int n, const int d, const int k,
     struct timeval t_start, t_end;
     gettimeofday(&t_start, NULL); /* 時間計測開始 */
 
-    vector<int> cluster(n);
+    vector<int> cluster(n, 0);
     /* 各点x_iがどのクラスタに属しているか */
     vector<vector <double> > representative(k);
     /* 各クラスタの代表点 */
     for(int z = 0; z < k; ++z){ /* ランダムに初期化する */
       representative.at(z) = data.at(z);
     }
-
+    
     double sq_err, sq_err_before = Lloyd_repeat(n, d, k, cluster, representative, data);
-    int t = 1; /* 繰り返しを何ステップ行ったか */
+    /* Lloyd_repeatの実行だが，
+     * 初期クラスタを定めるという意味で，0回目の繰り返し操作とみなす */
+
+    int t = 0; /* 繰り返しステップを何回繰り返したか */
+    cerr << "a: " << cluster << ": t = " << t << endl;
+
+    
     while(1){
       sq_err = Lloyd_repeat(n, d, k, cluster, representative, data);
-      if(sq_err == sq_err_before){ break; }
       t++;
+      cerr << "a: " << cluster << ": t = " << t << endl;
+      if(sq_err == sq_err_before){ break; }
       sq_err_before = sq_err;
     }
     
@@ -116,6 +124,9 @@ void Lloyd(const int n, const int d, const int k,
 	 << diff_timeval(t_start, t_end) << "\t" /* 実行時間(us) */
 	 << sq_err << "\t"                       /* 平均二乗誤差 */
 	 << t << endl;                           /* 繰り返し回数*/
+
+    cerr << "a: " << cluster << endl;
+    cerr << representative << endl;
     return;
   }
 }

@@ -60,19 +60,54 @@ std::vector<T> operator*(const T &mul, const std::vector<T> &self){
   return result;
 }
 
+
+template <class T>
+ostream &vector_show_body(ostream &stream, vector<T> vector){
+  stream << "(";
+  for(unsigned int i = 0; i < vector.size() - 1; ++i){
+      cerr << vector[i] << ",";
+    }
+  stream << vector.back() << ")";
+  return stream;
+}
+
 template <class T>
 ostream &operator<<(ostream &stream, vector<T> vector){
+  /* Boost ublas風にベクトルを表示 */
+  stream << "[" << vector.size() << "]";
+  return vector_show_body(stream, vector);
+#if 0
+  /* 当初の適当な実装 */
   for(int i = 0; i < (int)vector.size() - 1; i++){
     stream << vector.at(i) << ", "; 
   }
   stream << vector.back() << endl;
   return stream;
+#endif
 }
 
 template <class T>
+ostream &matrix_show_body(ostream &stream, vector< vector<T> > matrix){
+  stream << "(";
+  for(unsigned int i = 0; i < matrix.size() - 1; ++i){
+    vector_show_body(stream, matrix[i]);
+    stream << ",";
+  }
+  vector_show_body(stream, matrix.back());
+  stream << ")";
+  return stream;
+}
+
+
+template <class T>
 ostream &operator<<(ostream &stream, vector< vector<T> > matrix){
+  stream << "[" << matrix.size() << "," << matrix[0].size() << "]";
+  return matrix_show_body(stream, matrix);
+#if 0
+  /* 当初の適当な実装 */
   for(int i = 0; i < (int)matrix.size(); i++){ stream << matrix.at(i); }
   return stream;
+#endif
 }
 
 template <class T>
