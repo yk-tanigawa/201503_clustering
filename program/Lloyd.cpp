@@ -105,19 +105,23 @@ void Lloyd(const int n, const int d, const int k,
      * 初期クラスタを定めるという意味で，0回目の繰り返し操作とみなす */
 
     int t = 0; /* 繰り返しステップを何回繰り返したか */
-    cerr << "a: " << cluster << ": t = " << t << endl;
+    //cerr << "a: " << cluster << ": t = " << t << endl;
 
     
     while(1){
       sq_err = Lloyd_repeat(n, d, k, cluster, representative, data);
       t++;
-      cerr << "a: " << cluster << ": t = " << t << endl;
+      //cerr << "a: " << cluster << ": t = " << t << endl;
       if(sq_err == sq_err_before){ break; }
       sq_err_before = sq_err;
     }
     
     gettimeofday(&t_end, NULL); /* 時間計測終了 */
 
+    /* 結果を表示 */
+    cerr << "a: " << cluster << endl;
+    cerr << representative << endl;
+    
     cout << n << "\t"                            /* サンプル数 */
 	 << d << "\t"                            /* 次元 */
       	 << k << "\t"                            /* クラスタ数 */
@@ -125,8 +129,6 @@ void Lloyd(const int n, const int d, const int k,
 	 << sq_err << "\t"                       /* 平均二乗誤差 */
 	 << t << endl;                           /* 繰り返し回数*/
 
-    cerr << "a: " << cluster << endl;
-    cerr << representative << endl;
     return;
   }
 }

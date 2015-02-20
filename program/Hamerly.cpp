@@ -144,14 +144,12 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
 		    ublas::vector<double> &u,       /* upper bound */
 		    ublas::vector<double> &l        /* lower bound */){
   /* Hamerlyの繰り返しステップ クラスタ重心の更新の有無をbooleanで返す */
-  volatile bool updated = false; /* この繰り返しステップで何らかの更新があったか */
+  /* この繰り返しステップで何らかの更新があったか */
+  volatile bool updated = false;
+
+  /* クラスター中心の変化があったか */
   ublas::vector<bool> cluster_unchanged(k, true);
-#if 0
-  cerr << "updated:" << updated 
-       << " cluster_unchanged:" << cluster_unchanged
-       << " Hamerly_cond:" << Hamerly_cond
-       << endl;
-#endif
+
   /* まずs[j]を更新 
    * s[j] = min_{jj != j} dist(c[jj], c[j])
    *      = min2_jj dist(c[j], c[jj]) */   
@@ -163,7 +161,7 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
     s[j] = min2(distance);
   }
 
-  cerr << "s: " << s << endl;
+  //cerr << "s: " << s << endl;
   
   /* 各点x[i]について，Hamerlyの命題の条件をみたすか確認しながら
    * (つまり，適宜枝刈りを実行しながら)
@@ -172,11 +170,11 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
    * c_sum[], q[] を正しい値に保つ */
   for(unsigned int i = 0; i < n; ++i){
     double m = max((s[a[i]] / 2.0), l[i]);
-    cerr << "i = " << i << ", m = " << m << ", u[i] = " << u[i] << endl;
+    //cerr << "i = " << i << ", m = " << m << ", u[i] = " << u[i] << endl;
     if(u[i] > m){     /* Hamerlyの命題の条件を満たさない */
-      cerr << i << u[i] << " -> ";
+      //cerr << i << u[i] << " -> ";
       u[i] = dist(data,i,c,a[i]);  /* upper boundを厳密な値に更新 */
-      cerr << u[i] << endl;
+      //cerr << u[i] << endl;
       if(u[i] > m){   /* Hamerlyの命題の条件を満たさない */
 	unsigned int aa = a[i]; /* 最近接クラスタが変化したか調べる */
 	{ /* 最近接クラスタを再計算 */
@@ -209,14 +207,6 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
     }
   }
 
-#if 0
-  cerr << "updated:" << updated 
-       << " cluster_unchanged:" << cluster_unchanged
-       << " Hamerly_cond:" << Hamerly_cond
-       << endl;
-  
-  cerr << "u:" << u << endl;
-#endif
   ublas::matrix<double> c_prev = c; /* 変化前のクラスタ重心 */
   if(updated){ /* いずれかのデータ点の最近接クラスタが変化した場合 */
     ublas::vector<double> p(k, 0); /* 各クラスタの重心の移動距離 */
@@ -265,6 +255,23 @@ void Hamerly_init(const unsigned int n, const unsigned int d, const unsigned int
   
   /* upper bound, lower bound の更新 */
   Hamerly_update_ul(n, k, data, c, a, u, l);
+
+  /* 初期クラスタ中心に対するデータ割り当てに対応して，
+   * クラスター中心の更新や，各データ点のu[i],l[i]の更新が必要 */
+  
+  ublas::matrix<double> c_prev = c; /* 変化前のクラスタ重心 */
+
+  ublas::vector<double> p(k, 0); /* 各クラスタの重心の移動距離 */
+  for(unsigned int j = 0; j < k; ++j){  
+    row(c,j) = row(c_sum,j) / q[j]; /* クラスタ重心を更新 */
+    p[j] = dist(c_prev, j, c, j); /* クラスター重心の移動距離 */
+  }
+  unsigned int r = argmax(p);
+
+  for(unsigned int i = 0; i < n; ++i){
+    u[i] += p[a[i]];  l[i] -= p[r];
+  }
+
   
   return;
 }
@@ -306,16 +313,19 @@ void Hamerly(const unsigned int n, const unsigned int d, const unsigned int k,
 
     int t = 0; /* 繰り返しステップを何回繰り返したか */
     
-    cerr << "a: " << a << ": t = " << t << endl;
-
-    Hamerly_repeat(n, d, k, data, q, c, c_sum, s, a, u, l);
+    //cerr << "a: " << a << ": t = " << t << endl;
     
     while(Hamerly_repeat(n, d, k, data, q, c, c_sum, s, a, u, l)){
       t++;
-      cerr << "a: " << a << ": t = " << t << endl;
+      //cerr << "a: " << a << ": t = " << t << endl;
     }
+    t++; /* 更新されなかった最後の1回も実行されている */
 
     gettimeofday(&t_end, NULL); /* 時間計測終了 */
+
+    /* 結果を表示 */
+    cerr << "a: " << a << endl;
+    cerr << c << endl;
     
     cout << n << "\t"                               /* サンプル数 */
 	 << d << "\t"                               /* 次元 */
@@ -324,8 +334,6 @@ void Hamerly(const unsigned int n, const unsigned int d, const unsigned int k,
 	 << Hamerly_sqerr(n, k, data, c, a) << "\t" /* 平均二乗誤差 */
 	 << t << endl;                              /* 繰り返し回数*/
 
-    cerr << "a: " << a << endl;
-    cerr << c << endl;
     return;
   }
 }
