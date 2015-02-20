@@ -127,10 +127,10 @@ inline void Hamerly_update_ul(const unsigned int n, const unsigned int k,
     u[i] = dist_xc[a[i]]; /* u[i] = d(x[i], c[a[i]])*/
     l[i] = min2(dist_xc); /* l[i] = min2_j d(x[i], c[j]) */
     /* lはx[i]から2番目に近いクラスタ重心までの距離 */
-    cerr << i << ": " << u[i] << "\t" << l[i] << "\t" << dist_xc << endl;
+    //cerr << i << ": " << u[i] << "\t" << l[i] << "\t" << dist_xc << endl;
   }
-  cerr << u << endl;
-  cerr << l << endl;
+  //cerr << u << endl;
+  //cerr << l << endl;
   return;
 }
 
@@ -145,7 +145,7 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
 		    ublas::vector<double> &l        /* lower bound */){
   /* Hamerlyの繰り返しステップ クラスタ重心の更新の有無をbooleanで返す */
   volatile bool updated = false; /* この繰り返しステップで何らかの更新があったか */
-  ublas::vector<bool> cluster_unchanged(k, true), Hamerly_cond(n, true);
+  ublas::vector<bool> cluster_unchanged(k, true);
 #if 0
   cerr << "updated:" << updated 
        << " cluster_unchanged:" << cluster_unchanged
@@ -153,23 +153,30 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
        << endl;
 #endif
   /* まずs[j]を更新 
-   * s[j] = min_{jj != j} dist(c[jj], c[j]) */   
-    
+   * s[j] = min_{jj != j} dist(c[jj], c[j])
+   *      = min2_jj dist(c[j], c[jj]) */   
   for(unsigned int j = 0; j < k; ++j){
-    double min = DBL_MAX;
+    ublas::vector<double> distance(k, 0);
     for(unsigned int jj = 0; jj < k; ++jj){
-      if(jj != j){
-	double distance = dist(c,j,c,jj);
-	if(distance < min){ min = distance; }
-      }
+      distance[jj] = dist(c, j, c, jj);
     }
-    s[j] = min;
+    s[j] = min2(distance);
   }
+
+  cerr << "s: " << s << endl;
   
+  /* 各点x[i]について，Hamerlyの命題の条件をみたすか確認しながら
+   * (つまり，適宜枝刈りを実行しながら)
+   * 最近接クラスタの再割当てを行う 
+   * 同時に，のちのクラスタ重心の更新のために
+   * c_sum[], q[] を正しい値に保つ */
   for(unsigned int i = 0; i < n; ++i){
     double m = max((s[a[i]] / 2.0), l[i]);
+    cerr << "i = " << i << ", m = " << m << ", u[i] = " << u[i] << endl;
     if(u[i] > m){     /* Hamerlyの命題の条件を満たさない */
+      cerr << i << u[i] << " -> ";
       u[i] = dist(data,i,c,a[i]);  /* upper boundを厳密な値に更新 */
+      cerr << u[i] << endl;
       if(u[i] > m){   /* Hamerlyの命題の条件を満たさない */
 	unsigned int aa = a[i]; /* 最近接クラスタが変化したか調べる */
 	{ /* 最近接クラスタを再計算 */
@@ -180,16 +187,23 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
 	  a[i] = argmin(distance);
 	}
 	if(aa != a[i]){ /* 最近接クラスタの変化によるパラメタの更新*/
-	  /* この繰り返しステップで何らかの更新があった */
-	  updated = true; 
+	  /* 点x[i]の最近接クラスタは，aa から a[i] に変化した */
+	  updated = true; /* この繰り返しステップ更新があった */
 	  /* 後のクラスター重心の更新のために q, c_sum の更新が必要 
 	   * 同時に、更新があったクラスターのindexをメモしておく */
 	  row(c_sum,aa)   -= row(data,i); q[aa]--;
 	  row(c_sum,a[i]) += row(data,i); q[a[i]]++;
 	  cluster_unchanged[aa] = false;
 	  cluster_unchanged[a[i]] = false;
-	  /* u[], l[] を後に再計算する必要のあるデータ点をメモする */
-	  Hamerly_cond[i] = false;
+	  {
+	    ublas::vector<double> dist_xc(k, 0);
+	    /* x[i] とクラスター中心との距離*/
+	    for(unsigned int j = 0; j < k; ++j){
+	      dist_xc[j] = dist(data, i, c, j);
+	    }
+	    u[i] = dist_xc[a[i]]; /* u[i] = d(x[i], c[a[i]])*/
+	    l[i] = min2(dist_xc); /* l[i] = min2_j d(x[i], c[j]) */
+	  }
 	}
       }
     }
@@ -214,15 +228,12 @@ bool Hamerly_repeat(const unsigned int n, const unsigned int d, const unsigned i
     }
     unsigned int r = argmax(p);
     for(unsigned int i = 0; i < n; ++i){
-      if(!Hamerly_cond[i]){ /* i番目のデータ点の最近接クラスタが変化していた場合 */
-	u[i] += p[a[i]];  l[i] -= p[r];
-      }
+      u[i] += p[a[i]];  l[i] -= p[r];
     }
   }
 
   return updated; /* データ点の最近接クラスタに変化があったかを返す */
 }
-
 
 void Hamerly_init(const unsigned int n, const unsigned int d, const unsigned int k,
 		  const ublas::matrix <double> data,
@@ -235,7 +246,7 @@ void Hamerly_init(const unsigned int n, const unsigned int d, const unsigned int
   /* 各クラスタの代表点をランダムに選択 */
   for(unsigned int j = 0; j < k; ++j){
     ublas::zero_vector<double> zero(d);
-    q[j] = 0; row(c,j) = row(data, j); row(c_sum,j) = zero;    
+    row(c,j) = row(data, j);
     /* j番目のクラスタ中心をj番目のデータ点と一致させて初期化した */
   }
 
@@ -247,7 +258,6 @@ void Hamerly_init(const unsigned int n, const unsigned int d, const unsigned int
 	distance[j] = dist(data,i,c,j);
       }
       a[i] = argmin(distance);
-      //cerr << i << ": " << a[i] << "|" << distance << endl;
     }
     /* クラスタ内の点の数，クラスタの点のベクトル和も更新 */
     q[a[i]]++;  row(c_sum,a[i]) += row(data,i);    
@@ -282,10 +292,10 @@ void Hamerly(const unsigned int n, const unsigned int d, const unsigned int k,
     gettimeofday(&t_start, NULL); /* 時間計測開始 */
 
     /* j番目のクラスタを主語とする記号  */
-    ublas::vector<unsigned int> q(k);  /* クラスタ中の点の数 */
-    ublas::matrix<double> c(k,d);        /* クラスタの重心 */
-    ublas::matrix<double> c_sum(k,d);    /* クラスタ中のベクトルの総和 */
-    ublas::vector<double> s(k, 0);     /* 最近接クラスタの重心との距離 */
+    ublas::vector<unsigned int> q(k,0); /* クラスタ中の点の数 */
+    ublas::matrix<double> c(k,d,0);     /* クラスタの重心 */
+    ublas::matrix<double> c_sum(k,d,0); /* クラスタ中のベクトルの総和 */
+    ublas::vector<double> s(k,0);       /* 最近接クラスタの重心との距離 */
     
     /* i番目のデータ点を主語とする記号 */
     ublas::vector<unsigned int> a(n, 0);  /* 各点x_iが属するクラスタ */
@@ -297,6 +307,8 @@ void Hamerly(const unsigned int n, const unsigned int d, const unsigned int k,
     int t = 0; /* 繰り返しステップを何回繰り返したか */
     
     cerr << "a: " << a << ": t = " << t << endl;
+
+    Hamerly_repeat(n, d, k, data, q, c, c_sum, s, a, u, l);
     
     while(Hamerly_repeat(n, d, k, data, q, c, c_sum, s, a, u, l)){
       t++;
