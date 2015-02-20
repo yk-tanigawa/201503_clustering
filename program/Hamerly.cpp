@@ -119,29 +119,15 @@ inline void Hamerly_update_ul(const unsigned int n, const unsigned int k,
 			      const ublas::vector <unsigned int> a, /* 各点x_iが属するクラスタ */
 			      ublas::vector<double> &u,            /* upper bound */
 			      ublas::vector<double> &l             /* lower bound */){
+  ublas::vector<double> dist_xc(k, 0); /* x[i] とクラスター中心との距離*/
   for(unsigned int i = 0; i < n; ++i){
-#if 1
-    ublas::vector<double> dist_xc(k, 0); /* x[i] とクラスター中心との距離*/
     for(unsigned int j = 0; j < k; ++j){
       dist_xc[j] = dist(data, i, c, j);
     }
-    u[i] = dist_xc[a[i]];
-    l[i] = min2(dist_xc);
-#endif
-    /* u[], l[] の計算にバグがありそう スモールスケールで確かめる必要あり */
-#if 0
-    /* 下記はオリジナル・バージョン たぶんバグを含む　*/
-    u[i] = dist(data,i,c,a[i]);
-    double distance = dist(data,i,c,0);
-    double min = distance;
-    for(unsigned int j = 1; j < k; ++j){
-      if(j != a[i]){
-	distance = dist(data, i, c, j);
-	if(distance < min){ min = distance; }
-      }
-    }
-    l[i] = min;
-#endif
+    u[i] = dist_xc[a[i]]; /* u[i] = d(x[i], c[a[i]])*/
+    l[i] = min2(dist_xc); /* l[i] = min2_j d(x[i], c[j]) */
+    /* lはx[i]から2番目に近いクラスタ重心までの距離 */
+    cerr << i << ": " << u[i] << "\t" << l[i] << "\t" << dist_xc << endl;
   }
   cerr << u << endl;
   cerr << l << endl;
@@ -261,15 +247,12 @@ void Hamerly_init(const unsigned int n, const unsigned int d, const unsigned int
 	distance[j] = dist(data,i,c,j);
       }
       a[i] = argmin(distance);
+      //cerr << i << ": " << a[i] << "|" << distance << endl;
     }
     /* クラスタ内の点の数，クラスタの点のベクトル和も更新 */
     q[a[i]]++;  row(c_sum,a[i]) += row(data,i);    
   }
   
-  /* クラスタ重心の計算 */
-  for(unsigned int j = 0; j < k; ++j){
-    row(c,j) = (1.0 / q[j]) * row(c_sum,j);
-  }
   /* upper bound, lower bound の更新 */
   Hamerly_update_ul(n, k, data, c, a, u, l);
   
