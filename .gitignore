@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-data/*
-=======
 # Compiled Object files
 *.slo
 *.lo
@@ -34,4 +31,7 @@ data/*
 *.tex
 *.pdf
 report/*
->>>>>>> f928156535e2c6c99d47d03c3b8467162107097a
+
+results/*
+data/*
+
