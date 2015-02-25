@@ -1,4 +1,7 @@
-#include <time.h>
+#ifndef _TIME_BENCH_
+#define _TIME_BENCH_
+
+#include <ctime>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -20,4 +23,6 @@ long unsigned int diff_timeval(struct timeval start, struct timeval end){
   gettimeofday(&t_end, NULL);
   diff_timeval(t_start, t_end);
 }
+#endif
+
 #endif

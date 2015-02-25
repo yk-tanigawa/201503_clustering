@@ -9,23 +9,14 @@ EXEC = $(SRCS:.cpp=)
 RM = rm -f
 
 
-all: rand_data_generator Lloyd Hamerly kmeans
+all: rand_data_generator kmeans
 
 rand_data_generator: rand_data_generator.o
-	$(LD)  -o $@ $^ $(LDFLAGS)
-
-Lloyd.o: my_vector.hpp time_bench.hpp
-Lloyd: Lloyd.o 
-	$(LD)  -o $@ $^ $(LDFLAGS)
-
-Hamerly.o: my_vector.hpp time_bench.hpp
-Hamerly: Hamerly.o
 	$(LD)  -o $@ $^ $(LDFLAGS)
 
 kmeans.o: time_bench.hpp
 kmeans: kmeans.o
 	$(LD)  -o $@ $^ $(LDFLAGS)
-
 
 clean:
 	$(RM) $(OBJS) $(EXEC) *~
