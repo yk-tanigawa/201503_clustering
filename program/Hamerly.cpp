@@ -323,9 +323,17 @@ void Hamerly(const unsigned int n, const unsigned int d, const unsigned int k,
 
     gettimeofday(&t_end, NULL); /* 時間計測終了 */
 
-    /* 結果を表示 */
-    cerr << "a: " << a << endl;
-    cerr << c << endl;
+
+    { /* 結果を出力 */
+      ofstream fs("Hamerly_"
+		  + std::to_string(n) + "_"
+		  + std::to_string(d) + "_"
+		  + std::to_string(k) + ".txt");
+      if(fs.fail()){ exit(1); }
+      fs << "a: " << a << endl;
+      fs << c << endl;
+      fs.close();
+    }
     
     cout << n << "\t"                               /* サンプル数 */
 	 << d << "\t"                               /* 次元 */

@@ -118,9 +118,16 @@ void Lloyd(const int n, const int d, const int k,
     
     gettimeofday(&t_end, NULL); /* 時間計測終了 */
 
-    /* 結果を表示 */
-    cerr << "a: " << cluster << endl;
-    cerr << representative << endl;
+    { /* 結果を出力 */
+      ofstream fs("Lloyd_"
+		  + std::to_string(n) + "_"
+		  + std::to_string(d) + "_"
+		  + std::to_string(k) + ".txt");
+      if(fs.fail()){ exit(1); }
+      fs << "a: " << cluster << endl;
+      fs << representative << endl;
+      fs.close();
+    }
     
     cout << n << "\t"                            /* サンプル数 */
 	 << d << "\t"                            /* 次元 */

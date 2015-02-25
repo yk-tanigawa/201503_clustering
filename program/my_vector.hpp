@@ -65,7 +65,7 @@ template <class T>
 ostream &vector_show_body(ostream &stream, vector<T> vector){
   stream << "(";
   for(unsigned int i = 0; i < vector.size() - 1; ++i){
-      cerr << vector[i] << ",";
+      stream << vector[i] << ",";
     }
   stream << vector.back() << ")";
   return stream;
@@ -97,7 +97,6 @@ ostream &matrix_show_body(ostream &stream, vector< vector<T> > matrix){
   stream << ")";
   return stream;
 }
-
 
 template <class T>
 ostream &operator<<(ostream &stream, vector< vector<T> > matrix){
