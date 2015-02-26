@@ -16,13 +16,14 @@
 #include "time_bench.hpp"
 #include "Lloyd.hpp"
 #include "Hamerly.hpp"
+#include "Elkan.hpp"
 
 using namespace std;
 using namespace boost::numeric::ublas;
 using namespace boost::numeric;
 
-enum algorithm {Lloyd, Hamerly}; /* 実行するアルゴリズム */
-static const std::vector<string> algo_name{"Lloyd", "Hamerly"};
+enum algorithm {Lloyd, Hamerly, Elkan}; /* 実行するアルゴリズム */
+static const std::vector<string> algo_name{"Lloyd", "Hamerly", "Elkan"};
 
 #define BENCH 1
 /* k-meansの各種のアルゴリズムのベンチマークを取るときに1*/
@@ -86,6 +87,7 @@ int main(const int argc, char *argv[])
     enum algorithm method; /* 実行するアルゴリズム */
     if     (strcmp(argv[1], "Lloyd")   == 0){ method = Lloyd; }
     else if(strcmp(argv[1], "Hamerly") == 0){ method = Hamerly; }
+    else if(strcmp(argv[1], "Elkan")   == 0){ method = Elkan; }
     else{ /* 指定されたアルゴリズムが不明 */
       cerr << "unknown method : " << argv[1] << endl;
       exit(1);
@@ -131,6 +133,8 @@ int main(const int argc, char *argv[])
       rep = Lloyd_main(n, d, k, data, a, c);
     }else if(method == Hamerly){
       rep = Hamerly_main(n, d, k, data, a, c);
+    }else if(method == Elkan){
+      rep = Elkan_main(n, d, k, data, a, c);
     }
 
 #if BENCH

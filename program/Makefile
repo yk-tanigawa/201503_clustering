@@ -16,7 +16,9 @@ rand_data_generator: rand_data_generator.o
 
 Lloyd.hpp: kmeans.hpp my_ublas.hpp
 Hamerly.hpp: kmeans.hpp my_ublas.hpp
-kmeans.o: time_bench.hpp Lloyd.hpp Hamerly.hpp
+Elkan.hpp: kmeans.hpp my_ublas.hpp
+
+kmeans.o: time_bench.hpp Lloyd.hpp Hamerly.hpp Elkan.hpp
 kmeans: kmeans.o
 	$(LD)  -o $@ $^ $(LDFLAGS)
 
